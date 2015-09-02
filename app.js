@@ -1,12 +1,13 @@
 var express = require('express');
 var args = process.argv.join('|');
 var port = /\-\-port\|(\d+)(?:\||$)/.test(args) ? ~~RegExp.$1 : 8080;
+var daemon = /\-\-daemon\|true(?:\||$)/i.test(args) ? true : false;
 var path = require('path');
 var DOCUMENT_ROOT = path.resolve(/\-\-root\|(.*?)(?:\||$)/.test(args) ? RegExp.$1 : process.cwd());
 var app = express();
 
 // logger
-app.use(require('morgan')('short'));
+daemon || app.use(require('morgan')('short'));
 
 // server.conf 功能
 // 支持 test/ 目录下面 .js js 脚本功能和 json 预览功能。

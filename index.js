@@ -92,16 +92,6 @@ exports.start = function(opt, callback) {
     fis.log.error(err);
   });
 
-  // 父进程被杀时，子进程应该也被杀了。
-  process.on('SIGINT', function(code) {
-    try {
-      process.kill(server.pid, 'SIGINT');
-      process.kill(server.pid, 'SIGKILL');
-    } catch (e) {}
-
-    process.exit(1);
-  });
-
   if (opt.daemon) {
     util.pid(server.pid);
     server.unref();
