@@ -1,0 +1,30 @@
+{
+  "name": "fis3-server-node",
+  "version": "0.0.1",
+  "description": "fis3 server node",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/fex-team/fis3-server-node.git"
+  },
+  "keywords": [
+    "fis3",
+    "server",
+    "node"
+  ],
+  "dependencies": {
+    "express": "4.10.1",
+    "morgan": "^1.6.1",
+    "serve-index": "1.5.0",
+    "yog-devtools": "0.0.4"
+  },
+  "author": "fis",
+  "license": "BSD",
+  "bugs": {
+    "url": "https://github.com/fex-team/fis3-server-node/issues"
+  },
+  "homepage": "https://github.com/fex-team/fis3-server-node"
+}
