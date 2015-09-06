@@ -1,6 +1,36 @@
 var path = require('path');
 var util = fis.require('command-server/lib/util.js');
 var spawn = require('child_process').spawn;
+var fs = require('fs');
+
+// 每 0.2 秒读取子进程的输出文件。
+//
+// 为什么不直接通过 child.stdout 读取？
+// 因为如果使用 stdio pipe 的方式去开启子进程，当 master 进程退出后，子进程再有输出就会导致程序莫名的崩溃。
+// 解决办法是，让子进程的输出直接指向文件指针。
+// master 每隔一段时间去读文件，获取子进程输出。
+function watchOnFile(filepath, callback) {
+  var lastIndex = 0;
+
+  function read() {
+    var stat = fs.statSync(filepath);
+
+    if (stat.size != lastIndex) {
+      var fd = fs.openSync(filepath, 'r');
+      var buffer = new Buffer(stat.size - lastIndex);
+
+      fs.readSync(fd, buffer, lastIndex, stat.size - lastIndex);
+      var content = buffer.toString('utf8');
+      lastIndex = stat.size;
+
+      callback(content);
+    }
+
+    setTimeout(read, 200);
+  }
+
+  read();
+}
 
 exports.start = function(opt, callback) {
   var script = path.join(opt.root, 'server.js');
@@ -21,9 +51,11 @@ exports.start = function(opt, callback) {
   });
 
   process.stdout.write('\n Starting fis-server .');
+  var logFile = path.join(opt.root, 'server.log');
   var server = spawn(process.execPath, args, {
     cwd: path.dirname(script),
-    detached: opt.daemon
+    detached: opt.daemon,
+    stdio: [0, opt.daemon ? fs.openSync(logFile, 'w') : 'pipe', opt.daemon ? fs.openSync(logFile, 'w+') : 'pipe']
   });
 
   var log = '';
@@ -61,9 +93,6 @@ exports.start = function(opt, callback) {
       started = true;
       clearTimeout(timeoutTimer);
 
-      server.stderr.removeListener('data', onData);
-      server.stdout.removeListener('data', onData);
-
       process.stdout.write(' at port [' + opt.port + ']\n');
 
       setTimeout(function() {
@@ -81,19 +110,9 @@ exports.start = function(opt, callback) {
     }
   }
 
-  server.stderr.on('data', onData);
-  server.stdout.on('data', onData);
-
-  server.on('error', function(err) {
-    try {
-      process.kill(server.pid, 'SIGINT');
-      process.kill(server.pid, 'SIGKILL');
-    } catch (e) {}
-    fis.log.error(err);
-  });
-
   if (opt.daemon) {
-    util.pid(server.pid);
+    watchOnFile(logFile, onData);
+    util.pid(server.pid); // save pid to file.
     server.unref();
 
     timeoutTimer = setTimeout(function() {
@@ -102,6 +121,8 @@ exports.start = function(opt, callback) {
       fis.log.error('timeout');
     }, timeout);
   } else {
+    server.stdout.on('data', onData);
+    server.stderr.on('data', onData);
     server.stdout.pipe(process.stdout);
     server.stderr.pipe(process.stderr);
   }
