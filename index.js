@@ -96,10 +96,10 @@ exports.start = function(opt, callback) {
       process.stdout.write(' at port [' + opt.port + ']\n');
 
       setTimeout(function() {
-        var address = 'http://127.0.0.1' + (opt.port == 80 ? '/' : ':' + opt.port + '/');
+        var address = (opt.https ? 'https' : 'http') + '://127.0.0.1' + (opt.port == 80 ? '/' : ':' + opt.port + '/');
 
         fis.log.notice('Browse %s', address.yellow.bold);
-        fis.log.notice('Or browse %s', ('http://' + util.hostname + (opt.port == 80 ? '/' : ':' + opt.port + '/')).yellow.bold);
+        fis.log.notice('Or browse %s', ((opt.https ? 'https' : 'http') + '://' + util.hostname + (opt.port == 80 ? '/' : ':' + opt.port + '/')).yellow.bold);
 
         console.log();
 

@@ -1,6 +1,7 @@
 var express = require('express');
 var args = process.argv.join('|');
 var port = /\-\-port\|(\d+)(?:\||$)/.test(args) ? ~~RegExp.$1 : 8080;
+var https = /\-\-https\|(true)(?:\||$)/.test(args) ? !!RegExp.$1 : false;
 var path = require('path');
 var DOCUMENT_ROOT = path.resolve(/\-\-root\|(.*?)(?:\||$)/.test(args) ? RegExp.$1 : process.cwd());
 var app = express();
@@ -91,8 +92,21 @@ app.use(function(err, req, res, next) {
 });
 
 // Bind to a port
-var server = app.listen(port, '0.0.0.0', function() {
-    console.log(' Listening on http://127.0.0.1:%d', port);
+var fs = require('fs');
+var path = require('path');
+var server;
+
+if (https) {
+  server = require('https').createServer({
+    key: fs.readFileSync(path.join(__dirname, 'key.pem'), 'utf8'),
+    cert: fs.readFileSync(path.join(__dirname, 'cert.pem'), 'utf8'),
+  }, app);
+} else {
+  server = require('http').createServer(app);
+}
+
+server.listen(port, '0.0.0.0', function() {
+    console.log(' Listening on ' + (https ? 'https' : 'http') + '://127.0.0.1:%d', port);
 });
 
 // 在接收到关闭信号的时候，关闭所有的 socket 连接。
