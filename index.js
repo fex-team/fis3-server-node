@@ -69,6 +69,7 @@ exports.start = function(opt, callback) {
 
   var log = '';
   var started = false;
+  var error = false;
   var stoper;
 
   var onData = function(chunk) {
@@ -81,11 +82,12 @@ exports.start = function(opt, callback) {
     process.stdout.write('.');
 
     if (~chunk.indexOf('Error')) {
+      if (error) {
+        return;
+      }
 
+      error = true;
       process.stdout.write(' fail.\n');
-      try {
-        process.kill(server.pid, 'SIGKILL');
-      } catch (e) {}
 
       var match = chunk.match(/Error:?\s+([^\r\n]+)/i);
       var errMsg = 'unknown';
@@ -98,27 +100,24 @@ exports.start = function(opt, callback) {
       }
 
       log && console.log(log);
-      callback(errMsg);
       stoper && stoper();
+
+      try {
+        callback(errMsg);
+      } catch (e) {
+        console.log(e);
+      }
+
+      // try {
+      //   process.kill(server.pid, 'SIGKILL');
+      // } catch (e) {}
     } else if (~chunk.indexOf('Listening on')) {
       started = true;
       stoper && stoper();
       clearTimeout(timeoutTimer);
 
       process.stdout.write(' at port [' + opt.port + ']\n');
-
-      setTimeout(function() {
-        var address = (opt.https ? 'https' : 'http') + '://127.0.0.1' + (opt.port == 80 ? '/' : ':' + opt.port + '/');
-
-        fis.log.notice('Browse %s', address.yellow.bold);
-        fis.log.notice('Or browse %s', ((opt.https ? 'https' : 'http') + '://' + util.hostname + (opt.port == 80 ? '/' : ':' + opt.port + '/')).yellow.bold);
-
-        console.log();
-
-        opt.browse ? util.open(address, function() {
-          opt.daemon && process.exit();
-        }) : (opt.daemon && process.exit());
-      }, 200);
+      callback(null);
     }
   }
 
