@@ -51,6 +51,7 @@ app.use((function() {
                 html = '<!doctype html>';
                 html += '<html>';
                 html += '<head>';
+                html += '<meta name="viewport" content="width=device-width, initial-scale=1.0">';
                 html += '<title>' + pathname + '</title>';
                 html += '</head>';
                 html += '<body>';
