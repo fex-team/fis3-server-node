@@ -10,20 +10,40 @@ var app = express();
 // logger
 app.use(require('morgan')('short'));
 
-// parse application/x-www-form-urlencoded
-app.use(bodyParser.urlencoded({ extended: false }))
+app.use(function(req, res, next) {
+    var options = {
+        view_path: '',    // 避免报错。
+        rewrite_file: [path.join(DOCUMENT_ROOT, 'config', 'server.conf'), path.join(DOCUMENT_ROOT, 'mock', 'server.conf')],
+        data_path: [path.join(DOCUMENT_ROOT, 'test'), path.join(DOCUMENT_ROOT, 'mock')]
+    };
 
-// parse application/json
-app.use(bodyParser.json())
+    [
+        require('yog-devtools/lib/rewrite')(options), 
+        bodyParser.urlencoded({extended: false}),
+        bodyParser.json(),
+        require('yog-devtools/lib/preview')(options), 
+        require('yog-devtools/lib/script')(options)
+    ].reverse().reduce(function(next, middlewave) {
+        return function() {
+            middlewave(req, res, next);
+        };
+    }, next)();
+});
 
-// server.conf 功能
-// 支持 test/ 目录下面 .js js 脚本功能和 json 预览功能。
-// 注意这里面的.js，不是一般的.js 文件，而是相当于 express 的 route.
-app.use(require('yog-devtools')({
-    view_path: '',    // 避免报错。
-    rewrite_file: [path.join(DOCUMENT_ROOT, 'config', 'server.conf'), path.join(DOCUMENT_ROOT, 'mock', 'server.conf')],
-    data_path: [path.join(DOCUMENT_ROOT, 'test'), path.join(DOCUMENT_ROOT, 'mock')]
-}));
+// // parse application/x-www-form-urlencoded
+// app.use(bodyParser.urlencoded({ extended: false }))
+
+// // parse application/json
+// app.use(bodyParser.json())
+
+// // server.conf 功能
+// // 支持 test/ 目录下面 .js js 脚本功能和 json 预览功能。
+// // 注意这里面的.js，不是一般的.js 文件，而是相当于 express 的 route.
+// app.use(require('yog-devtools')({
+//     view_path: '',    // 避免报错。
+//     rewrite_file: [path.join(DOCUMENT_ROOT, 'config', 'server.conf'), path.join(DOCUMENT_ROOT, 'mock', 'server.conf')],
+//     data_path: [path.join(DOCUMENT_ROOT, 'test'), path.join(DOCUMENT_ROOT, 'mock')]
+// }));
 
 // 静态文件输出
 app.use(express.static(DOCUMENT_ROOT, {
