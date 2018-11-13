@@ -124,9 +124,14 @@ var path = require('path');
 var server;
 
 if (https) {
+  var customKeyFile = path.join(DOCUMENT_ROOT, 'ca-key.pem');
+  var customCertFile = path.join(DOCUMENT_ROOT, 'ca-cert.pem');
+  var keyFile = fs.existsSync(customKeyFile) ? customKeyFile : path.join(__dirname, 'key.pem');
+  var CertFile = fs.existsSync(customCertFile) ? customCertFile : path.join(__dirname, 'cert.pem');
+
   server = require('https').createServer({
-    key: fs.readFileSync(path.join(__dirname, 'key.pem'), 'utf8'),
-    cert: fs.readFileSync(path.join(__dirname, 'cert.pem'), 'utf8'),
+    key: fs.readFileSync(keyFile, 'utf8'),
+    cert: fs.readFileSync(CertFile, 'utf8'),
   }, app);
 } else {
   server = require('http').createServer(app);
